@@ -328,13 +328,6 @@ if (WIN32)
   set_target_properties(webm PROPERTIES PREFIX lib)
 endif ()
 
-add_executable(mkvparser_sample ${mkvparser_sample_sources})
-target_link_libraries(mkvparser_sample LINK_PUBLIC webm)
-
-add_executable(mkvmuxer_sample ${mkvmuxer_sample_sources}
-               $<TARGET_OBJECTS:webvtt_common>)
-target_link_libraries(mkvmuxer_sample LINK_PUBLIC webm)
-
 add_executable(dumpvtt ${dumpvtt_sources} $<TARGET_OBJECTS:webvtt_common>)
 target_link_libraries(dumpvtt LINK_PUBLIC webm)
 
