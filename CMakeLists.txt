@@ -23,6 +23,9 @@ option(ENABLE_TESTS "Enables tests." OFF)
 option(ENABLE_IWYU "Enables include-what-you-use support." OFF)
 option(ENABLE_WERROR "Enable warnings as errors." OFF)
 option(ENABLE_WEBM_PARSER "Enables new parser API." OFF)
+option(ENABLE_SAMPLES "Enables samples." ON)
+option(ENABLE_VTTDEMUX "Enables vttdemux." ON)
+option(ENABLE_DUMPVTT "Enables dumpvtt." ON)
 
 if(WIN32)
   require_cxx_flag_nomsvc("-std=gnu++11")
@@ -332,18 +335,24 @@ if (WIN32)
   set_target_properties(webm PROPERTIES PREFIX lib)
 endif ()
 
-add_executable(mkvparser_sample ${mkvparser_sample_sources})
-target_link_libraries(mkvparser_sample LINK_PUBLIC webm)
+if (ENABLE_SAMPLES)
+  add_executable(mkvparser_sample ${mkvparser_sample_sources})
+  target_link_libraries(mkvparser_sample LINK_PUBLIC webm)
 
-add_executable(mkvmuxer_sample ${mkvmuxer_sample_sources}
-               $<TARGET_OBJECTS:webvtt_common>)
-target_link_libraries(mkvmuxer_sample LINK_PUBLIC webm)
+  add_executable(mkvmuxer_sample ${mkvmuxer_sample_sources}
+                 $<TARGET_OBJECTS:webvtt_common>)
+  target_link_libraries(mkvmuxer_sample LINK_PUBLIC webm)
+endif()
 
-add_executable(dumpvtt ${dumpvtt_sources} $<TARGET_OBJECTS:webvtt_common>)
-target_link_libraries(dumpvtt LINK_PUBLIC webm)
+if (ENABLE_DUMPVTT)
+  add_executable(dumpvtt ${dumpvtt_sources} $<TARGET_OBJECTS:webvtt_common>)
+  target_link_libraries(dumpvtt LINK_PUBLIC webm)
+ENDIF()
 
-add_executable(vttdemux ${vttdemux_sources})
-target_link_libraries(vttdemux LINK_PUBLIC webm)
+if (ENABLE_VTTDEMUX)
+  add_executable(vttdemux ${vttdemux_sources})
+  target_link_libraries(vttdemux LINK_PUBLIC webm)
+endif()
 
 if (ENABLE_WEBMINFO)
   add_executable(webm_info ${webm_info_sources})
@@ -438,3 +447,25 @@ if (ENABLE_IWYU)
     message(STATUS "  See README.libwebm for more information.")
   endif ()
 endif ()
+
+# --------------------------------------------------------------------------
+# Configure library
+SET(${PROJECT_NAME}_INCLUDE_DIRS
+  ${LIBWEBM_SRC_DIR}
+  ${LIBWEBM_SRC_DIR}/common
+  ${LIBWEBM_SRC_DIR}/mkvmuxer
+  ${LIBWEBM_SRC_DIR}/mkvparser
+  ${LIBWEBM_SRC_DIR}/testing
+  ${LIBWEBM_SRC_DIR}/webvtt
+  ${LIBWEBM_SRC_DIR}/webm_parser
+  ${LIBWEBM_SRC_DIR}/webm_parser/tests
+  ${LIBWEBM_SRC_DIR}/m2ts
+  ${CMAKE_CURRENT_BINARY_DIR}
+  CACHE INTERNAL ""
+  )
+
+set(LIBWEBM_LIBRARY_TARGETS_FILE libwebmTargets.cmake)
+EXPORT(TARGETS webm
+  FILE ${CMAKE_BINARY_DIR}/${LIBWEBM_LIBRARY_TARGETS_FILE}
+  )
+INCLUDE(${LIBWEBM_SRC_DIR}/cmake/GenerateLibwebmConfig.cmake)
