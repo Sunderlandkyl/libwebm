@@ -8,11 +8,27 @@
 cmake_minimum_required(VERSION 3.2)
 project(LIBWEBM CXX)
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/build/cxx_flags.cmake")
+IF(NOT LIBWEBM_INSTALL_BIN_DIR)
+  SET(LIBWEBM_INSTALL_BIN_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+ENDIF()
 
-if (NOT BUILD_SHARED_LIBS)
-  include("${CMAKE_CURRENT_SOURCE_DIR}/build/msvc_runtime.cmake")
-endif ()
+IF(NOT LIBWEBM_INSTALL_LIB_DIR)
+  SET(LIBWEBM_INSTALL_LIB_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+ENDIF()
+
+IF(NOT LIBWEBM_INSTALL_DATA_DIR)
+  SET(LIBWEBM_INSTALL_DATA_DIR ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+ENDIF()
+
+# --------------------------------------------------------------------------
+# Configure library
+SET(${PROJECT_NAME}_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  CACHE INTERNAL ""
+  )
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/build/cxx_flags.cmake")
 
 set(LIBWEBM_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -23,6 +39,9 @@ option(ENABLE_TESTS "Enables tests." OFF)
 option(ENABLE_IWYU "Enables include-what-you-use support." OFF)
 option(ENABLE_WERROR "Enable warnings as errors." OFF)
 option(ENABLE_WEBM_PARSER "Enables new parser API." OFF)
+option(ENABLE_SAMPLES "Enables samples." OFF)
+option(ENABLE_VTTDEMUX "Enables vttdemux." OFF)
+option(ENABLE_DUMPVTT "Enables dumpvtt." OFF)
 
 require_cxx_flag_nomsvc("-std=c++11")
 
@@ -70,17 +89,17 @@ set(mkvmuxer_sources
     "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvwriter.cc"
     "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvwriter.h"
     "${LIBWEBM_SRC_DIR}/common/webmids.h")
-
+    
 set(mkvmuxer_sample_sources
     "${LIBWEBM_SRC_DIR}/mkvmuxer_sample.cc"
     "${LIBWEBM_SRC_DIR}/sample_muxer_metadata.cc"
     "${LIBWEBM_SRC_DIR}/sample_muxer_metadata.h")
-
+    
 set(mkvmuxer_tests_sources
     "${LIBWEBM_SRC_DIR}/testing/mkvmuxer_tests.cc"
     "${LIBWEBM_SRC_DIR}/testing/test_util.cc"
     "${LIBWEBM_SRC_DIR}/testing/test_util.h")
-
+    
 set(mkvparser_sources
     "${LIBWEBM_SRC_DIR}/mkvparser/mkvparser.cc"
     "${LIBWEBM_SRC_DIR}/mkvparser/mkvparser.h"
@@ -326,20 +345,27 @@ if (WIN32)
   # webm and webm.lib).
   set_target_properties(webm PROPERTIES PROJECT_LABEL libwebm)
   set_target_properties(webm PROPERTIES PREFIX lib)
+  set_target_properties(webm PROPERTIES IMPORT_PREFIX lib)
 endif ()
 
-add_executable(mkvparser_sample ${mkvparser_sample_sources})
-target_link_libraries(mkvparser_sample LINK_PUBLIC webm)
+if (ENABLE_SAMPLES)
+  add_executable(mkvparser_sample ${mkvparser_sample_sources})
+  target_link_libraries(mkvparser_sample LINK_PUBLIC webm)
 
-add_executable(mkvmuxer_sample ${mkvmuxer_sample_sources}
-               $<TARGET_OBJECTS:webvtt_common>)
-target_link_libraries(mkvmuxer_sample LINK_PUBLIC webm)
+  add_executable(mkvmuxer_sample ${mkvmuxer_sample_sources}
+                 $<TARGET_OBJECTS:webvtt_common>)
+  target_link_libraries(mkvmuxer_sample LINK_PUBLIC webm)
+endif()
 
-add_executable(dumpvtt ${dumpvtt_sources} $<TARGET_OBJECTS:webvtt_common>)
-target_link_libraries(dumpvtt LINK_PUBLIC webm)
+if (ENABLE_DUMPVTT)
+  add_executable(dumpvtt ${dumpvtt_sources} $<TARGET_OBJECTS:webvtt_common>)
+  target_link_libraries(dumpvtt LINK_PUBLIC webm)
+ENDIF()
 
-add_executable(vttdemux ${vttdemux_sources})
-target_link_libraries(vttdemux LINK_PUBLIC webm)
+if (ENABLE_VTTDEMUX)
+  add_executable(vttdemux ${vttdemux_sources})
+  target_link_libraries(vttdemux LINK_PUBLIC webm)
+endif()
 
 if (ENABLE_WEBMINFO)
   add_executable(webm_info ${webm_info_sources})
@@ -434,3 +460,24 @@ if (ENABLE_IWYU)
     message(STATUS "  See README.libwebm for more information.")
   endif ()
 endif ()
+
+  LIST(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
+    ${LIBWEBM_SRC_DIR}
+    ${LIBWEBM_SRC_DIR}/common
+    ${LIBWEBM_SRC_DIR}/mkvmuxer
+    ${LIBWEBM_SRC_DIR}/mkvparser
+    ${LIBWEBM_SRC_DIR}/testing
+    ${LIBWEBM_SRC_DIR}/webvtt
+    ${LIBWEBM_SRC_DIR}/webm_parser
+    ${LIBWEBM_SRC_DIR}/webm_parser/tests
+    ${LIBWEBM_SRC_DIR}/m2ts
+    )
+
+set(LIBWEBM_LIBRARY_TARGETS_FILE libwebmTargets.cmake)
+EXPORT(TARGETS webm
+  FILE ${CMAKE_BINARY_DIR}/${LIBWEBM_LIBRARY_TARGETS_FILE}
+  )
+
+CONFIGURE_FILE(${LIBWEBM_SRC_DIR}/UseLibwebm.cmake.in
+  ${CMAKE_BINARY_DIR}/UseLibwebm.cmake COPYONLY IMMEDIATE)
+INCLUDE(${LIBWEBM_SRC_DIR}/cmake/GenerateLibwebmConfig.cmake)

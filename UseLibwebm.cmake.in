@@ -1,0 +1,18 @@
+#
+# This file sets up include directories, link directories, and
+# compiler settings for a project to use libwebm.  It should not be
+# included directly, but rather through the OpenIGTLink_USE_FILE setting
+# obtained from OpenIGTLinkConfig.cmake.
+#
+
+## TODO:::
+#IF(OpenIGTLink_BUILD_SETTINGS_FILE AND NOT SKIP_OpenIGTLink_BUILD_SETTINGS_FILE)
+  #INCLUDE(${CMAKE_ROOT}/Modules/CMakeImportBuildSettings.cmake)
+  #CMAKE_IMPORT_BUILD_SETTINGS(${OpenIGTLink_BUILD_SETTINGS_FILE})
+#ENDIF()
+
+# Add include directories needed to use libwebm.
+INCLUDE_DIRECTORIES(BEFORE ${libwebm_INCLUDE_DIRS})
+
+# Load the libwebm targets
+include(${libwebm_LIBRARY_TARGETS_FILE})
